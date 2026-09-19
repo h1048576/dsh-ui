@@ -40,6 +40,7 @@ function observeSidebarLayout(): () => void {
 
 type SaveSetting = (key: keyof UIConfig, value: string) => Promise<void>
 
+
 function SettingsField({ field, value, saveSetting, disabled }: {
   field: typeof fields[number]
   value: string
@@ -72,6 +73,7 @@ function SettingsField({ field, value, saveSetting, disabled }: {
   return <div className="dsh-ui-settings-row">
     <label id={`${id}-label`} htmlFor={id}>{field.label}</label>
     {'options' in field ? <Menu open={open} onClose={() => setOpen(false)} align="end" portal
+      className="dsh-ui-settings-menu"
       items={field.options.map(option => ({ id: option.value || 'default', label: option.label }))}
       selectedId={(draft ?? value) || 'default'}
       onSelect={selected => {
@@ -111,7 +113,7 @@ function SettingsPanel({ scope, saveSetting }: { scope: SettingsScope<UIConfig>;
   </div>
 }
 
-export const inject = ['slots', 'settingsScope', 'remote.settings']
+export const inject = ['slots', 'settingsScope', 'remote', 'remote.settings']
 
 export function apply(ctx: Context): void {
   const scope = ctx.settingsScope.bind<UIConfig>({ namespace: NAMESPACE })

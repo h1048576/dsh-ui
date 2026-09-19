@@ -2,7 +2,7 @@ import { normalizeConfig, parseFonts, type UIConfig } from '../config'
 
 // 使用官方语义属性和 CSS 变量，不绑定 CSS Modules 的编译后类名。
 const conversation = '[data-slot="main.conversation"], [data-conversation-content], [data-conversation-scroll]'
-export const sidebarFrame = ':has(> [data-rightbar-col])'
+export const sidebarFrame = ':has(> [data-rightbar-col]):has(> div > [data-slot="sidebar"])'
 
 export function appearanceStyles(input: UIConfig): string {
   const config = normalizeConfig(input)
@@ -17,6 +17,7 @@ export function appearanceStyles(input: UIConfig): string {
         grid-template-columns: min(${config.sidebarWidth}, 100%) minmax(0, 1fr) var(--dsh-ui-rightbar-width, 0px) !important;
         --dsh-windows-sidebar-width: min(${config.sidebarWidth}, 100vw) !important;
       }
+      ${sidebarFrame}:not([data-sidebar-collapsed]) > div > [data-slot="sidebar"] > div { width: 100% !important; }
       ${sidebarFrame}:not([data-sidebar-collapsed]) > [data-side="sidebar"] { display: none !important; }
     `)
   }
@@ -52,13 +53,16 @@ export function appearanceStyles(input: UIConfig): string {
 
 export const settingsStyles = `
   .dsh-ui-settings { display: flex; flex-direction: column; width: 100%; color: var(--dsw-alias-label-primary); }
-  .dsh-ui-settings-row { display: flex; align-items: center; gap: 8px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 14px; font-weight: 400; line-height: 22px; }
+  .dsh-ui-settings-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 14px; font-weight: 400; line-height: 22px; }
   .dsh-ui-settings-row:last-child { border-bottom: none; }
-  .dsh-ui-settings-row > span { flex: 1; white-space: nowrap; }
-  .dsh-ui-settings :is(input, select) { box-sizing: border-box; width: 60%; max-width: 300px; min-width: 0; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: inherit; font: inherit; text-align: right; }
-  .dsh-ui-settings select { cursor: pointer; }
-  .dsh-ui-settings :is(input, select):hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
-  .dsh-ui-settings :is(input, select):focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
-  .dsh-ui-settings :is(input, select)[aria-invalid=true] { outline: 1px solid var(--dsw-alias-state-error-primary, #c33); }
+  .dsh-ui-settings-row > label { flex: 1; white-space: nowrap; }
+  .dsh-ui-settings input, .dsh-ui-settings-select { box-sizing: border-box; min-width: 0; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font: inherit; }
+  .dsh-ui-settings input { width: 60%; max-width: 300px; text-align: right; }
+  .dsh-ui-settings-select { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
+  .dsh-ui-settings-select svg { flex: none; }
+  .dsh-ui-settings :is(input, button):hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+  .dsh-ui-settings :is(input, button):focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
+  .dsh-ui-settings :is(input, button)[aria-invalid=true] { outline: 1px solid var(--dsw-alias-state-error-primary, #c33); }
+  .dsh-ui-settings-error { flex-basis: 100%; color: var(--dsw-alias-state-error-primary, #c33); font-size: 12px; line-height: 18px; text-align: right; }
   .dsh-ui-settings :disabled { opacity: .55; cursor: default; }
 `

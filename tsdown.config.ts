@@ -19,7 +19,7 @@ export default defineConfig([
     dts: false,
     clean: false,
     fixedExtension: false,
-    deps: { neverBundle: ['react', 'react/jsx-runtime'], alwaysBundle: [/^\.\.?\//] },
+    deps: { neverBundle: ['react', 'react/jsx-runtime', '@deepseek-ai/dsh-client-ui-primitives'], alwaysBundle: [/^\.\.?\//] },
     outputOptions: {
       entryFileNames: 'client.js',
       banner: 'window.__ModuleLoader__.load({ id: "dsh-ui", factory: (require) => {',

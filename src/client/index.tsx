@@ -1,7 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { useState, useSyncExternalStore } from 'react'
+import type {} from '@deepseek-ai/dsh-api-remotes/client'
+import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useId, useState, useSyncExternalStore } from 'react'
 import { defaults, fields, NAMESPACE, normalizeConfig, type UIConfig } from '../config'
 import { appearanceStyles, settingsStyles, sidebarFrame } from './styles'
 
@@ -36,15 +38,19 @@ function observeSidebarLayout(): () => void {
   }
 }
 
-function SettingsField({ field, value, scope, disabled }: {
+type SaveSetting = (key: keyof UIConfig, value: string) => Promise<void>
+
+function SettingsField({ field, value, saveSetting, disabled }: {
   field: typeof fields[number]
   value: string
-  scope: SettingsScope<UIConfig>
+  saveSetting: SaveSetting
   disabled: boolean
 }) {
   const [draft, setDraft] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [open, setOpen] = useState(false)
+  const id = useId()
 
   async function save(next = draft) {
     if (next === null || disabled || busy) return
@@ -52,7 +58,7 @@ function SettingsField({ field, value, scope, disabled }: {
       const normalized = normalizeConfig({ ...defaults, [field.key]: next })[field.key]
       if (normalized !== value) {
         setBusy(true)
-        await scope.set(field.key, normalized)
+        await saveSetting(field.key, normalized)
       }
       setDraft(null)
       setError('')
@@ -63,19 +69,26 @@ function SettingsField({ field, value, scope, disabled }: {
     }
   }
 
-  return <label className="dsh-ui-settings-row">
-    <span>{field.label}</span>
-    {'options' in field ? <select value={draft ?? value} disabled={disabled || busy}
-      aria-invalid={Boolean(error)} title={error || undefined}
-      onChange={event => {
-        const next = event.target.value
+  return <div className="dsh-ui-settings-row">
+    <label id={`${id}-label`} htmlFor={id}>{field.label}</label>
+    {'options' in field ? <Menu open={open} onClose={() => setOpen(false)} align="end" portal
+      items={field.options.map(option => ({ id: option.value || 'default', label: option.label }))}
+      selectedId={(draft ?? value) || 'default'}
+      onSelect={selected => {
+        const next = selected === 'default' ? '' : selected
+        setOpen(false)
         setDraft(next)
         setError('')
         void save(next)
-      }}>
-      {field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select> : <input value={draft ?? value} disabled={disabled || busy}
-      aria-invalid={Boolean(error)} title={error || undefined}
+      }} anchor={<button id={id} type="button" className="dsh-ui-settings-select"
+        disabled={disabled || busy} aria-haspopup="menu" aria-expanded={open}
+        aria-labelledby={`${id}-label ${id}-value`} aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id}-error` : undefined}
+        onClick={() => setOpen(current => !current)}>
+        <span id={`${id}-value`}>{field.options.find(option => option.value === (draft ?? value))?.label ?? '默认'}</span>
+        <IconChevronDownOutline14 />
+      </button>} /> : <input id={id} value={draft ?? value} disabled={disabled || busy}
+      aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}
       onChange={event => { setDraft(event.target.value); setError('') }}
       onBlur={() => { void save() }}
       onKeyDown={event => {
@@ -84,23 +97,39 @@ function SettingsField({ field, value, scope, disabled }: {
           event.currentTarget.blur()
         }
       }} />}
-  </label>
-}
-
-function SettingsPanel({ scope }: { scope: SettingsScope<UIConfig> }) {
-  const snapshot = useSyncExternalStore(scope.subscribe.bind(scope), scope.getSnapshot.bind(scope))
-  const ready = snapshot.value !== undefined && (snapshot.mode === 'memory' || snapshot.writable)
-
-  return <div className="dsh-ui-settings" aria-busy={snapshot.status === 'loading'}>
-    {fields.map(field => <SettingsField key={field.key} field={field}
-      value={snapshot.value?.[field.key] ?? defaults[field.key]} scope={scope} disabled={!ready} />)}
+    {error && <span id={`${id}-error`} className="dsh-ui-settings-error" role="alert">{error}</span>}
   </div>
 }
 
-export const inject = ['slots', 'settingsScope']
+function SettingsPanel({ scope, saveSetting }: { scope: SettingsScope<UIConfig>; saveSetting: SaveSetting }) {
+  const snapshot = useSyncExternalStore(scope.subscribe.bind(scope), scope.getSnapshot.bind(scope))
+  const ready = snapshot.value !== undefined && snapshot.mode === 'host' && snapshot.writable
+
+  return <div className="dsh-ui-settings" aria-busy={snapshot.status === 'loading'}>
+    {fields.map(field => <SettingsField key={field.key} field={field}
+      value={snapshot.value?.[field.key] ?? defaults[field.key]} saveSetting={saveSetting} disabled={!ready} />)}
+  </div>
+}
+
+export const inject = ['slots', 'settingsScope', 'remote.settings']
 
 export function apply(ctx: Context): void {
   const scope = ctx.settingsScope.bind<UIConfig>({ namespace: NAMESPACE })
+  const mirror = ctx.settingsScope.describe()
+  let pending = Promise.resolve()
+  const saveSetting: SaveSetting = (key, value) => {
+    const task = pending.then(async () => {
+      // 单字段写入按顺序执行，由宿主基于最新配置合并，避免旧 revision 导致静默回退。
+      const response = await ctx.remote.settings.mutate(NAMESPACE, [{ op: 'set', path: [key], value }], undefined)
+      if (!response.ok) throw new Error(response.error.message)
+      mirror.acceptView(response.value)
+      if (scope.getSnapshot().value?.[key] !== value) {
+        throw new Error('设置未生效，请确认宿主已加载最新版本的 DSH UI 插件。')
+      }
+    })
+    pending = task.catch(() => {})
+    return task
+  }
   ctx.effect(() => {
     const style = document.createElement('style')
     style.dataset.plugin = NAMESPACE
@@ -118,6 +147,6 @@ export function apply(ctx: Context): void {
   }, 'dsh-ui: 字体与布局样式')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section', id: NAMESPACE, order: 50, label: 'DSH UI',
-    inject: () => ({ scope }),
+    inject: () => ({ scope, saveSetting }),
   }, SettingsPanel))
 }

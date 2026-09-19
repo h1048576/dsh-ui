@@ -24,7 +24,7 @@ export const fontWeightOptions = [
 export const fields = [
   { key: 'font', label: '字体', placeholder: 'LXGW WenKai Mono, Cascadia Mono' },
   { key: 'fontWeight', label: '字体粗细', options: fontWeightOptions },
-  { key: 'sidebarWidth', label: '左侧栏宽度', placeholder: '280px' },
+  { key: 'sidebarWidth', label: '工作区宽度', placeholder: '280px' },
   { key: 'conversationWidth', label: '对话框宽度', placeholder: '90rem' },
   { key: 'composerWidth', label: '聊天框宽度', placeholder: '80rem' },
   { key: 'composerHeight', label: '聊天框高度', placeholder: '300px' },

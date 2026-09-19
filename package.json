@@ -6,18 +6,41 @@
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
-    ".": { "types": "./lib/types/index.d.ts", "default": "./lib/index.js" },
-    "./client": { "types": "./lib/types/client/index.d.ts", "default": "./lib/client.js" },
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/types/client/index.d.ts",
+      "default": "./lib/client.js"
+    },
     "./package.json": "./package.json"
   },
-  "files": ["lib", "cordis.patch.yml"],
-  "keywords": ["dsh-plugin", "deepseek-harness", "font", "ui"],
-  "engines": { "node": ">=22.18.0" },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "font",
+    "ui"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
-      "inject": ["@deepseek-ai/dsh-client-ui-settings", "@deepseek-ai/dsh-client-ui-settings-general", "@deepseek-ai/dsh-client-ui-renderer"]
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-settings-general",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ]
     }
   },
   "scripts": {
@@ -26,13 +49,21 @@
     "prepare": "npm run build",
     "prepack": "npm run check"
   },
-  "peerDependencies": { "@deepseek-ai/cordis": "^4.0.2" },
-  "dependencies": { "@deepseek-ai/schemastery": "3.18.2" },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.2"
+  },
   "devDependencies": {
     "@deepseek-ai/cordis": "4.0.2",
-    "@deepseek-ai/dsh-settings": "0.1.6-alpha.2",
-    "@deepseek-ai/dsh-client-ui-settings": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-api-gateway": "^0.1.6-alpha.2",
+    "@deepseek-ai/dsh-api-remotes": "^0.1.6-alpha.2",
+    "@deepseek-ai/dsh-api-settings-controller": "^0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "^0.1.6-alpha.2",
     "@deepseek-ai/dsh-client-ui-renderer": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-settings": "0.1.6-alpha.2",
     "@types/react": "~18.3.1",
     "react": "^18.2.0",
     "tsdown": "0.21.4",

@@ -3,7 +3,38 @@ import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { useState, useSyncExternalStore } from 'react'
 import { defaults, fields, NAMESPACE, normalizeConfig, type UIConfig } from '../config'
-import { appearanceStyles, settingsStyles } from './styles'
+import { appearanceStyles, settingsStyles, sidebarFrame } from './styles'
+
+// 宿主以内联网格列宽控制右侧面板，保留其列宽以兼容展开、收起和拖动。
+function observeSidebarLayout(): () => void {
+  const frames = new Set<HTMLElement>()
+  function sync(frame: HTMLElement) {
+    const rightbarWidth = frame.style.gridTemplateColumns.match(/\s(\d+(?:\.\d+)?px)$/)?.[1]
+    if (!rightbarWidth) return
+    frames.add(frame)
+    if (frame.style.getPropertyValue('--dsh-ui-rightbar-width') !== rightbarWidth) {
+      frame.style.setProperty('--dsh-ui-rightbar-width', rightbarWidth)
+    }
+  }
+  function discover() {
+    for (const frame of frames) {
+      if (!frame.isConnected) frames.delete(frame)
+    }
+    document.querySelectorAll<HTMLElement>(sidebarFrame).forEach(sync)
+  }
+  const observer = new MutationObserver(records => {
+    if (records.some(record => record.type === 'childList')) discover()
+    else for (const record of records) {
+      if (record.target instanceof HTMLElement && record.target.matches(sidebarFrame)) sync(record.target)
+    }
+  })
+  discover()
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] })
+  return () => {
+    observer.disconnect()
+    for (const frame of frames) frame.style.removeProperty('--dsh-ui-rightbar-width')
+  }
+}
 
 function SettingsField({ field, value, scope, disabled }: {
   field: typeof fields[number]
@@ -15,10 +46,10 @@ function SettingsField({ field, value, scope, disabled }: {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  async function save() {
-    if (draft === null || disabled || busy) return
+  async function save(next = draft) {
+    if (next === null || disabled || busy) return
     try {
-      const normalized = normalizeConfig({ ...defaults, [field.key]: draft })[field.key]
+      const normalized = normalizeConfig({ ...defaults, [field.key]: next })[field.key]
       if (normalized !== value) {
         setBusy(true)
         await scope.set(field.key, normalized)
@@ -34,7 +65,16 @@ function SettingsField({ field, value, scope, disabled }: {
 
   return <label className="dsh-ui-settings-row">
     <span>{field.label}</span>
-    <input value={draft ?? value} disabled={disabled || busy}
+    {'options' in field ? <select value={draft ?? value} disabled={disabled || busy}
+      aria-invalid={Boolean(error)} title={error || undefined}
+      onChange={event => {
+        const next = event.target.value
+        setDraft(next)
+        setError('')
+        void save(next)
+      }}>
+      {field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+    </select> : <input value={draft ?? value} disabled={disabled || busy}
       aria-invalid={Boolean(error)} title={error || undefined}
       onChange={event => { setDraft(event.target.value); setError('') }}
       onBlur={() => { void save() }}
@@ -43,7 +83,7 @@ function SettingsField({ field, value, scope, disabled }: {
           event.preventDefault()
           event.currentTarget.blur()
         }
-      }} />
+      }} />}
   </label>
 }
 
@@ -53,7 +93,7 @@ function SettingsPanel({ scope }: { scope: SettingsScope<UIConfig> }) {
 
   return <div className="dsh-ui-settings" aria-busy={snapshot.status === 'loading'}>
     {fields.map(field => <SettingsField key={field.key} field={field}
-      value={(snapshot.value ?? defaults)[field.key]} scope={scope} disabled={!ready} />)}
+      value={snapshot.value?.[field.key] ?? defaults[field.key]} scope={scope} disabled={!ready} />)}
   </div>
 }
 
@@ -65,12 +105,16 @@ export function apply(ctx: Context): void {
     const style = document.createElement('style')
     style.dataset.plugin = NAMESPACE
     document.head.appendChild(style)
+    let stopSidebarLayout: (() => void) | undefined
     const update = () => {
-      style.textContent = settingsStyles + appearanceStyles(scope.getSnapshot().value ?? defaults)
+      const config = scope.getSnapshot().value ?? defaults
+      if (config.sidebarWidth) stopSidebarLayout ??= observeSidebarLayout()
+      else { stopSidebarLayout?.(); stopSidebarLayout = undefined }
+      style.textContent = settingsStyles + appearanceStyles(config)
     }
     update()
     const unsubscribe = scope.subscribe(update)
-    return () => { unsubscribe(); style.remove() }
+    return () => { unsubscribe(); stopSidebarLayout?.(); style.remove() }
   }, 'dsh-ui: 字体与布局样式')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section', id: NAMESPACE, order: 50, label: 'DSH UI',

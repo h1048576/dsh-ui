@@ -2,11 +2,24 @@ import { normalizeConfig, parseFonts, type UIConfig } from '../config'
 
 // 使用官方语义属性和 CSS 变量，不绑定 CSS Modules 的编译后类名。
 const conversation = '[data-slot="main.conversation"], [data-conversation-content], [data-conversation-scroll]'
+export const sidebarFrame = ':has(> [data-rightbar-col])'
 
 export function appearanceStyles(input: UIConfig): string {
   const config = normalizeConfig(input)
   const fonts = parseFonts(config.font)
   const rules: string[] = []
+  if (config.fontWeight) {
+    rules.push(`body, body * { font-weight: ${config.fontWeight} !important; }`)
+  }
+  if (config.sidebarWidth) {
+    rules.push(`
+      ${sidebarFrame}:not([data-sidebar-collapsed]) {
+        grid-template-columns: min(${config.sidebarWidth}, 100%) minmax(0, 1fr) var(--dsh-ui-rightbar-width, 0px) !important;
+        --dsh-windows-sidebar-width: min(${config.sidebarWidth}, 100vw) !important;
+      }
+      ${sidebarFrame}:not([data-sidebar-collapsed]) > [data-side="sidebar"] { display: none !important; }
+    `)
+  }
   if (fonts.length) {
     const chinese = JSON.stringify(fonts[0])
     const english = JSON.stringify(fonts[1] ?? fonts[0])
@@ -42,9 +55,10 @@ export const settingsStyles = `
   .dsh-ui-settings-row { display: flex; align-items: center; gap: 8px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 14px; font-weight: 400; line-height: 22px; }
   .dsh-ui-settings-row:last-child { border-bottom: none; }
   .dsh-ui-settings-row > span { flex: 1; white-space: nowrap; }
-  .dsh-ui-settings input { box-sizing: border-box; width: 60%; max-width: 300px; min-width: 0; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: inherit; font: inherit; text-align: right; }
-  .dsh-ui-settings input:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
-  .dsh-ui-settings input:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
-  .dsh-ui-settings input[aria-invalid=true] { outline: 1px solid var(--dsw-alias-state-error-primary, #c33); }
+  .dsh-ui-settings :is(input, select) { box-sizing: border-box; width: 60%; max-width: 300px; min-width: 0; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: inherit; font: inherit; text-align: right; }
+  .dsh-ui-settings select { cursor: pointer; }
+  .dsh-ui-settings :is(input, select):hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+  .dsh-ui-settings :is(input, select):focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
+  .dsh-ui-settings :is(input, select)[aria-invalid=true] { outline: 1px solid var(--dsw-alias-state-error-primary, #c33); }
   .dsh-ui-settings :disabled { opacity: .55; cursor: default; }
 `

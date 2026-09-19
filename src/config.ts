@@ -2,17 +2,29 @@ export const NAMESPACE = 'dsh-ui'
 
 export interface UIConfig {
   font: string
+  fontWeight: string
+  sidebarWidth: string
   conversationWidth: string
   composerWidth: string
   composerHeight: string
 }
 
 export const defaults: UIConfig = {
-  font: '', conversationWidth: '', composerWidth: '', composerHeight: '',
+  font: '', fontWeight: '', sidebarWidth: '', conversationWidth: '', composerWidth: '', composerHeight: '',
 }
+
+export const fontWeightOptions = [
+  { label: '特细', value: '100' },
+  { label: '半细', value: '300' },
+  { label: '默认', value: '' },
+  { label: '半粗', value: '600' },
+  { label: '特粗', value: '900' },
+] as const
 
 export const fields = [
   { key: 'font', label: '字体', placeholder: 'LXGW WenKai Mono, Cascadia Mono' },
+  { key: 'fontWeight', label: '字体粗细', options: fontWeightOptions },
+  { key: 'sidebarWidth', label: '左侧栏宽度', placeholder: '280px' },
   { key: 'conversationWidth', label: '对话框宽度', placeholder: '90rem' },
   { key: 'composerWidth', label: '聊天框宽度', placeholder: '80rem' },
   { key: 'composerHeight', label: '聊天框高度', placeholder: '300px' },
@@ -29,12 +41,16 @@ export function parseFonts(value: string): string[] {
 
 export function normalizeConfig(input: UIConfig): UIConfig {
   const font = parseFonts(input.font).join(', ')
-  const result = { ...input, font }
+  const fontWeight = input.fontWeight ?? defaults.fontWeight
+  if (!fontWeightOptions.some(option => option.value === fontWeight)) {
+    throw new Error('字体粗细请选择特细、半细、默认、半粗或特粗。')
+  }
+  const result = { ...input, font, fontWeight }
   for (const field of fields) {
-    if (field.key === 'font') continue
-    const value = input[field.key].trim().toLowerCase()
-    if (value && (!/^(?:\d+(?:\.\d+)?|\.\d+)(px|rem)$/.test(value) || !Number.isFinite(parseFloat(value)) || parseFloat(value) <= 0)) {
-      throw new Error(`${field.label}请输入大于 0 的 px 或 rem 尺寸，例如 ${field.placeholder}。`)
+    if (field.key === 'font' || field.key === 'fontWeight') continue
+    const value = (input[field.key] ?? defaults[field.key]).trim().toLowerCase()
+    if (value && (!/^(?:\d+(?:\.\d+)?|\.\d+)(px|rem|vw)$/.test(value) || !Number.isFinite(parseFloat(value)) || parseFloat(value) <= 0)) {
+      throw new Error(`${field.label}请输入大于 0 的 px、rem 或 vw 尺寸，例如 ${field.placeholder} 或 75vw。`)
     }
     result[field.key] = value
   }

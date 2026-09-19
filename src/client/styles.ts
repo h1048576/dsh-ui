@@ -38,17 +38,13 @@ export function appearanceStyles(input: UIConfig): string {
 }
 
 export const settingsStyles = `
-  .dsh-ui-settings { padding: 20px; color: var(--dsw-alias-label-primary); }
-  .dsh-ui-settings h2 { margin: 0 0 8px; font-size: 18px; }
-  .dsh-ui-settings p { line-height: 1.6; }
-  .dsh-ui-settings fieldset { padding: 0; border: 0; margin: 20px 0; display: grid; gap: 20px; min-width: 0; }
-  .dsh-ui-settings label { display: grid; gap: 8px; font-weight: 500; }
-  .dsh-ui-settings input { box-sizing: border-box; width: 100%; max-width: 560px; padding: 10px 12px; border: 1px solid var(--dsw-alias-border-l3, #888); border-radius: 8px; background: var(--dsw-alias-bg-base); color: inherit; font: inherit; }
-  .dsh-ui-settings small { color: var(--dsw-alias-label-secondary); font-weight: 400; line-height: 1.6; }
-  .dsh-ui-settings input:focus-visible, .dsh-ui-settings button:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
-  .dsh-ui-settings footer { display: flex; gap: 12px; flex-wrap: wrap; }
-  .dsh-ui-settings button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l3, #888); color: inherit; background: var(--dsw-alias-interactive-bg-hover); cursor: pointer; font: inherit; }
-  .dsh-ui-settings button[type=submit] { background: var(--dsw-alias-state-business-primary, #3964fe); color: white; border-color: transparent; }
+  .dsh-ui-settings { display: flex; flex-direction: column; width: 100%; color: var(--dsw-alias-label-primary); }
+  .dsh-ui-settings-row { display: flex; align-items: center; gap: 8px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 14px; font-weight: 400; line-height: 22px; }
+  .dsh-ui-settings-row:last-child { border-bottom: none; }
+  .dsh-ui-settings-row > span { flex: 1; white-space: nowrap; }
+  .dsh-ui-settings input { box-sizing: border-box; width: 60%; max-width: 300px; min-width: 0; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: inherit; font: inherit; text-align: right; }
+  .dsh-ui-settings input:hover:not(:disabled) { background: var(--dsw-alias-interactive-bg-hover); }
+  .dsh-ui-settings input:focus-visible { outline: 2px solid var(--dsw-alias-state-business-primary, #3964fe); outline-offset: 2px; }
+  .dsh-ui-settings input[aria-invalid=true] { outline: 1px solid var(--dsw-alias-state-error-primary, #c33); }
   .dsh-ui-settings :disabled { opacity: .55; cursor: default; }
-  .dsh-ui-settings [role=alert] { color: var(--dsw-alias-state-error-primary, #c33); }
 `

@@ -12,10 +12,10 @@ export const defaults: UIConfig = {
 }
 
 export const fields = [
-  { key: 'font', label: '字体', placeholder: 'LXGW WenKai Mono, Cascadia Mono', help: '第一段为中文字体，第二段为英文字体，以逗号分隔；只有一段时中英文共用。请先在本机安装字体。' },
-  { key: 'conversationWidth', label: '对话框宽度', placeholder: '90rem', help: '消息展示区域的最大宽度，例如 80rem、90rem、1200px 或 1400px。' },
-  { key: 'composerWidth', label: '聊天框宽度', placeholder: '80rem', help: '消息输入框的最大宽度，独立于对话框宽度。支持 px 和 rem。' },
-  { key: 'composerHeight', label: '聊天框高度', placeholder: '300px', help: '消息输入框的整体高度（含底部工具栏），例如 300px。小窗口会自动限制高度，长文本在框内滚动。' },
+  { key: 'font', label: '字体', placeholder: 'LXGW WenKai Mono, Cascadia Mono' },
+  { key: 'conversationWidth', label: '对话框宽度', placeholder: '90rem' },
+  { key: 'composerWidth', label: '聊天框宽度', placeholder: '80rem' },
+  { key: 'composerHeight', label: '聊天框高度', placeholder: '300px' },
 ] as const
 
 export function parseFonts(value: string): string[] {

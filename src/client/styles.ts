@@ -46,11 +46,13 @@ export function appearanceStyles(input: UIConfig): string {
 
 export const settingsStyles = `
   .dsh-ui-settings { display: flex; flex-direction: column; width: 100%; color: var(--dsw-alias-label-primary); }
+  .dsh-ui-settings-hint { margin: 0; padding: 0 0 8px; color: var(--dsw-alias-label-tertiary); font-size: 12px; line-height: 18px; }
   .dsh-ui-settings-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; border-bottom: .5px solid var(--dsw-alias-border-l2); font-size: 14px; font-weight: 400; line-height: 22px; }
   .dsh-ui-settings-row:last-child { border-bottom: none; }
   .dsh-ui-settings-row > label { flex: 1; white-space: nowrap; }
   .dsh-ui-settings input, .dsh-ui-settings-select { box-sizing: border-box; min-width: 0; width: 60%; max-width: 300px; height: 36px; padding: 0 14px; border: none; border-radius: 18px; background: var(--dsw-alias-bg-module-platform); color: var(--dsw-alias-label-primary); font: inherit; }
   .dsh-ui-settings input { text-align: right; }
+  .dsh-ui-settings input::placeholder { color: var(--dsw-alias-label-tertiary); opacity: 1; }
   .dsh-ui-settings-select { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
   .dsh-ui-settings-select svg { flex: none; }
   /* Menu 的根是 inline-flex 的 shrink-to-fit 包裹层，若把 60% 放在内部按钮上，

@@ -23,9 +23,9 @@ export const fontWeightOptions = [
 export const fields = [
   { key: 'font', label: '字体', placeholder: 'Cascadia Mono, LXGW WenKai Mono' },
   { key: 'fontWeight', label: '字体粗细', options: fontWeightOptions },
-  { key: 'sidebarWidth', label: '工作区宽度', placeholder: '280px' },
-  { key: 'conversationWidth', label: '对话框宽度', placeholder: '90rem' },
-  { key: 'composerWidth', label: '聊天框宽度', placeholder: '80rem' },
+  { key: 'sidebarWidth', label: '左侧栏宽度', placeholder: '280px' },
+  { key: 'conversationWidth', label: '消息内容宽度', placeholder: '90rem' },
+  { key: 'composerWidth', label: '输入框宽度', placeholder: '80rem' },
 ] as const
 
 export function parseFonts(value: string): string[] {

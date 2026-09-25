@@ -1,8 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import type {} from '@deepseek-ai/dsh-api-remotes/client'
-import { IconChevronDownOutline14, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconChevronDownOutlineRegular, Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { useId, useState, useSyncExternalStore } from 'react'
 import { defaults, fields, NAMESPACE, normalizeConfig, type UIConfig } from '../config'
 import { appearanceStyles, settingsStyles, sidebarFrame } from './styles'
@@ -11,7 +10,7 @@ import { appearanceStyles, settingsStyles, sidebarFrame } from './styles'
 function observeSidebarLayout(): () => void {
   const frames = new Set<HTMLElement>()
   function sync(frame: HTMLElement) {
-    const rightbarWidth = frame.style.gridTemplateColumns.match(/\s(\d+(?:\.\d+)?px)$/)?.[1]
+    const rightbarWidth = frame.style.gridTemplateColumns.match(/(\d+(?:\.\d+)?px)\)?\s*$/)?.[1]
     if (!rightbarWidth) return
     frames.add(frame)
     if (frame.style.getPropertyValue('--dsh-ui-rightbar-width') !== rightbarWidth) {
@@ -88,8 +87,8 @@ function SettingsField({ field, value, saveSetting, disabled }: {
         aria-describedby={error ? `${id}-error` : undefined}
         onClick={() => setOpen(current => !current)}>
         <span id={`${id}-value`}>{field.options.find(option => option.value === (draft ?? value))?.label ?? '默认'}</span>
-        <IconChevronDownOutline14 />
-      </button>} /> : <input id={id} value={draft ?? value} disabled={disabled || busy}
+        <IconChevronDownOutlineRegular size={14} />
+      </button>} /> : <input id={id} value={draft ?? value} placeholder={field.placeholder} disabled={disabled || busy}
       aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined}
       onChange={event => { setDraft(event.target.value); setError('') }}
       onBlur={() => { void save() }}
@@ -103,34 +102,25 @@ function SettingsField({ field, value, saveSetting, disabled }: {
   </div>
 }
 
-function SettingsPanel({ scope, saveSetting }: { scope: SettingsScope<UIConfig>; saveSetting: SaveSetting }) {
-  const snapshot = useSyncExternalStore(scope.subscribe.bind(scope), scope.getSnapshot.bind(scope))
-  const ready = snapshot.value !== undefined && snapshot.mode === 'host' && snapshot.writable
+function SettingsPanel({ form, saveSetting }: { form: ConfigForm<UIConfig>; saveSetting: SaveSetting }) {
+  const snapshot = useSyncExternalStore(form.subscribe.bind(form), form.getSnapshot.bind(form))
+  const ready = snapshot.status === 'ready' && snapshot.writable
 
   return <div className="dsh-ui-settings" aria-busy={snapshot.status === 'loading'}>
+    <p className="dsh-ui-settings-hint">灰色文字是填写示例；留空使用 DSH 默认值。输入后按 Enter 或移开焦点保存。</p>
     {fields.map(field => <SettingsField key={field.key} field={field}
       value={snapshot.value?.[field.key] ?? defaults[field.key]} saveSetting={saveSetting} disabled={!ready} />)}
   </div>
 }
 
-export const inject = ['slots', 'settingsScope', 'remote', 'remote.settings']
+export const inject = ['slots', 'configForms']
 
 export function apply(ctx: Context): void {
-  const scope = ctx.settingsScope.bind<UIConfig>({ namespace: NAMESPACE })
-  const mirror = ctx.settingsScope.describe()
-  let pending = Promise.resolve()
-  const saveSetting: SaveSetting = (key, value) => {
-    const task = pending.then(async () => {
-      // 单字段写入按顺序执行，由宿主基于最新配置合并，避免旧 revision 导致静默回退。
-      const response = await ctx.remote.settings.mutate(NAMESPACE, [{ op: 'set', path: [key], value }], undefined)
-      if (!response.ok) throw new Error(response.error.message)
-      mirror.acceptView(response.value)
-      if (scope.getSnapshot().value?.[key] !== value) {
-        throw new Error('设置未生效，请确认宿主已加载最新版本的 DSH UI 插件。')
-      }
-    })
-    pending = task.catch(() => {})
-    return task
+  const form = ctx.configForms.get<UIConfig>(NAMESPACE)
+  const saveSetting: SaveSetting = async (key, value) => {
+    if (!await form.set(key, value) || form.getSnapshot().value?.[key] !== value) {
+      throw new Error('设置未生效，请确认宿主已加载最新版本的 DSH UI 插件。')
+    }
   }
   ctx.effect(() => {
     const style = document.createElement('style')
@@ -138,17 +128,17 @@ export function apply(ctx: Context): void {
     document.head.appendChild(style)
     let stopSidebarLayout: (() => void) | undefined
     const update = () => {
-      const config = scope.getSnapshot().value ?? defaults
+      const config = form.getSnapshot().value ?? defaults
       if (config.sidebarWidth) stopSidebarLayout ??= observeSidebarLayout()
       else { stopSidebarLayout?.(); stopSidebarLayout = undefined }
       style.textContent = settingsStyles + appearanceStyles(config)
     }
     update()
-    const unsubscribe = scope.subscribe(update)
+    const unsubscribe = form.subscribe(update)
     return () => { unsubscribe(); stopSidebarLayout?.(); style.remove() }
   }, 'dsh-ui: 字体与布局样式')
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section', id: NAMESPACE, order: 50, label: 'DSH UI',
-    inject: () => ({ scope, saveSetting }),
+    inject: () => ({ form, saveSetting }),
   }, SettingsPanel))
 }
